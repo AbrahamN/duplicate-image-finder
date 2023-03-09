@@ -1,17 +1,19 @@
 # Duplicate Image Finder
-Identifies similar pictures on your local computer
+Identifies similar pictures on your local computer (original by beeftornado)
+
+Disclaimer, not very accurate anymore probably need to change the image resize process?
 
 ## Installation
 
 ```sh
-git clone https://github.com/beeftornado/duplicate-image-finder.git
+git clone https://github.com/AbrahamN/duplicate-image-finder.git
 cd duplicate-image-finder
 pip install -r requirements.txt  # or pip install -e .
 duplicateimagefinder/app.py --help
 ```
 
 ## Usage
-This is a python script so requires python 2.7 or higher. While it was tested on OSX 10.10.3, it should work on any system that has Python installed.
+This is a python script so requires python 3.9 or higher. It should work on any system that has Python 3 installed but not tested.
 
 ```sh
 usage: app.py [-h] [-c CONFIDENCE_THRESHOLD] [--cpus CPUS]
@@ -57,7 +59,7 @@ I saw plenty of solutions online, but they either cost too much money for such a
 
 ### Most Basic: Searching for duplicates in a folder
 
-You want to find duplicate photos in `~/Pictures`
+You want to find duplicate photos in `~/Pictures` (change to fixed path on windows)
 
 ```
 ./app.py -d ~/Pictures

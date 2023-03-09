@@ -1,20 +1,23 @@
 #!/usr/bin/env python
 
 import argparse
-from functools import partial
+from functools import partial, reduce
 from multiprocessing import Pool, cpu_count
 import time
 
 from blitzdb import FileBackend, Document
-from PIL import Image
+from PIL import Image, ImageFile
 from tqdm import *
 
 from __init__ import *
 from enums import *
 from output_formats import outputter_for_format
+
 from output_formats.base import OutputRecord
 from utils import *
 
+import duplicateimagefinder.output_formats.jsono
+import duplicateimagefinder.output_formats.human
 
 class ImageHash(Document):
     pass
@@ -23,8 +26,9 @@ class ImageHash(Document):
 class ImageUtils(object):
 
     # In-memory hashes that we've encountered during the scan
-    saved_hashes = dict()
 
+    saved_hashes = dict()
+    
     backend_lock = Lock()
     persistent_store = FileBackend("hashes.db")
     persistent_store.create_index(ImageHash, 'name')
@@ -43,10 +47,10 @@ class ImageUtils(object):
             pass
         except ImageHash.MultipleDocumentsReturned:
             cls.backend_lock.acquire()
-            print "Multiple cache entries found for {}".format(filename)
-            print "Trying to clean it up, but it problem persist you may need to delete the cache."
+            print("Multiple cache entries found for {}".format(filename))
+            print("Trying to clean it up, but it problem persist you may need to delete the cache.")
             entries = cls.persistent_store.filter(ImageHash, {'name': filename})
-            print "Deleting {} entries".format(len(entries))
+            print("Deleting {} entries".format(len(entries)))
             entries.delete()
             cls.persistent_store.commit()
             cls.backend_lock.release()
@@ -90,7 +94,7 @@ class ImageUtils(object):
         cls.saved_hashes[key] = value
 
     @classmethod
-    def hash(cls, image, filename=None):
+    def hash(cls, image, filename=None):     
         # Return already calculated hash in memory
         if cls.saved_hashes.get(filename, None):
             return cls.saved_hashes.get(filename, None)
@@ -106,11 +110,11 @@ class ImageUtils(object):
                 image = Image.open(image)
             except IOError:
                 return None
-        image = image.resize((8, 9), Image.ANTIALIAS).convert('L')
+        ImageFile.LOAD_TRUNCATED_IMAGES = True
+        Image.Image.LOAD_TRUNCATED_IMAGES = True   
+        image = image.resize((8, 9), Image.Resampling.LANCZOS).convert('L')
         avg = reduce(lambda x, y: x + y, image.getdata()) / 64.
-        avhash = reduce(lambda x, (y, z): x | (z << y),
-                        enumerate(map(lambda i: 0 if i < avg else 1, image.getdata())),
-                        0)
+        avhash = reduce(lambda x, ytuple: x | (ytuple[1] << ytuple[0]), enumerate(map(lambda i: 0 if i < avg else 1, image.getdata())), 0)
         return avhash
 
     @staticmethod
@@ -147,16 +151,16 @@ def main(*args, **kwargs):
 
     file_count = len(images)
     if not compare_to:
-        print "%d files to process in %s" % (file_count, start_dir)
+        print("%d files to process in %s" % (file_count, start_dir))
     else:
-        print "Comparing %d images between %s and %s" % (file_count, start_dir, compare_to)
+        print("Comparing %d images between %s and %s" % (file_count, start_dir, compare_to))
 
     if file_count == 0:
-        print "No images found"
+        print("No images found")
         exit(0)
 
     # Prehash
-    print "Please wait for initial image scan to complete..."
+    print("Please wait for initial image scan to complete...")
 
     # Create a worker pool to hash the images over multiple cpus
     worker_pool = Pool(processes=cpus, initializer=init_worker, maxtasksperchild=100)
@@ -183,12 +187,12 @@ def main(*args, **kwargs):
             print_progress(int(float(done)/total*100), rate, eta)
             # if all(r.ready() for r in worker_results):
             if done == total:
-                print "Hashing completed"
+                print("Hashing completed")
                 break
             time.sleep(1)
     except (KeyboardInterrupt, SystemExit):
-        print '\n'
-        print "Caught KeyboardInterrupt, terminating workers"
+        print('\n')
+        print("Caught KeyboardInterrupt, terminating workers")
         worker_pool.terminate()
         worker_pool.join()
         ImageUtils.persistent_store.commit()
@@ -201,8 +205,8 @@ def main(*args, **kwargs):
         return
 
     # Comparison
-    print ""
-    print "Comparing the images..."
+    print("")
+    print("Comparing the images...")
 
     target_dir1 = os.path.expanduser(start_dir)
     target_dir2 = os.path.expanduser(compare_to) if compare_to else None
@@ -220,7 +224,7 @@ def main(*args, **kwargs):
             continue
 
         # Compare to all images following
-        for jdx in xrange(idx + 1, len(images)):
+        for jdx in range(idx + 1, len(images)):
             image_path2 = images[jdx]
 
             # Skip same image paths if it happens
@@ -251,7 +255,7 @@ def main(*args, **kwargs):
     # Print the results
     outputter_for_format(output).output(similar_pairs)
 
-    print '\n'
+    print('\n')
 
 
 if __name__ == '__main__':
