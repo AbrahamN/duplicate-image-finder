@@ -54,10 +54,10 @@ def print_progress(progress, rate=None, eta=None):
     bars_not_done = bars_to_show - bars_done
     rate_str = '({} per second)'.format(rate) if rate else ''
     eta_str = '({}:{} remaining)'.format(eta/60, str(eta%60).zfill(2)) if eta != None else ''
-    sys.stdout.old_write('\r[{0}{1}] {2}% {3} {4} {5}'.format('#'*bars_done, '-'*bars_not_done, progress, rate_str, eta_str, ' '*10))
+    sys.stdout.old_write('\r[{0}{1}] {2}% {3} {4} {5}'.format('#'*int(bars_done), '-'*int(bars_not_done), progress, rate_str, eta_str, ' '*10))
     sys.stdout.flush()
     if progress >= 100:
-        print ""
+        print("")
 
 
 def osx_photoslibrary_location():
@@ -70,15 +70,15 @@ def osx_photoslibrary_location():
         for dirname in fnmatch.filter(dirnames, '*.photoslibrary'):
             libraries.append(os.path.join(root, dirname))
     if not len(libraries):
-        print "Apple Photos library not found."
+        print("Apple Photos library not found.")
         exit(1)
     if len(libraries) > 1:
         # Found more than one library
-        print 'Found {} photos libraries, which one do you want to use?'.format(len(libraries))
+        print('Found {} photos libraries, which one do you want to use?'.format(len(libraries)))
         opt_idx = 1
         for l in libraries:
-            print '{}. {}'.format(opt_idx, l)
-        print ''
+            print('{}. {}'.format(opt_idx, l))
+        print ('')
         choice = raw_input(" >>  ")
         libraries[0] = libraries[choice-1]
     return libraries[0]
@@ -90,11 +90,11 @@ class MethodProxy(object):
     """
     def __init__(self, obj, method):
         self.obj = obj
-        if isinstance(method, basestring):
+        if isinstance(method, str):
             self.methodName = method
         else:
             assert callable(method)
-            self.methodName = method.func_name
+            self.methodName = method.__name__
 
     def __call__(self, *args, **kwargs):
         return getattr(self.obj, self.methodName)(*args, **kwargs)

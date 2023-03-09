@@ -1,6 +1,5 @@
 from duplicateimagefinder.enums import *
-import human
-import jsono
+from duplicateimagefinder.output_formats import human, jsono
 
 
 def outputter_for_format(fmt):
